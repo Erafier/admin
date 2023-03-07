@@ -27,6 +27,7 @@ const RolesTable = {
             modalType: 'create',
             editableRoleName: null,
             deletingRole: null,
+            loading: false,
         }
     },
     mounted() {
@@ -59,6 +60,16 @@ const RolesTable = {
             return fetch(`/api/v1/admin/roles`).then((data) => {
                 return data.json()
             })
+        },
+        async saveRolesAPI(tableData) {
+            const res = await fetch('/api/v1/admin/permissions/', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(tableData)
+            })
+            return res.json();
         },
         generateTableOptions() {
             $('#roles-table').bootstrapTable('destroy').bootstrapTable({
@@ -235,8 +246,20 @@ const RolesTable = {
                 return row
             })
         },
-        saveRoles() {
-
+        async saveRoles() {
+            this.loading = true;
+            const tableData = $('#roles-table').bootstrapTable('getData');
+            this.saveRolesAPI(tableData).then((res) => {
+                if (res.ok) {
+                    showNotify('SUCCESS', 'Permissions updated')
+                    this.canEdit = false;
+                    this.fetchTableData();
+                }
+            }).catch(e => {
+                showNotify('ERROR', e)
+            }).finally(() => {
+                this.loading = false;
+            })
         }
     },
     template: `
@@ -260,12 +283,13 @@ const RolesTable = {
                             @click="changeMode">
                             <i class="icon__18x18 icon-edit"></i>
                         </button>
-                        <div v-if="canEdit">
+                        <template v-if="canEdit">
                             <button type="button" @click="changeMode" 
                                 id="project_submit" class="btn btn-secondary btn-basic">Cancel</button>
-                            <button type="button" @click="saveRoles" 
-                                id="project_submit" class="btn btn-basic ml-2">Save</button>
-                        </div>
+                            <button type="button" @click="saveRoles" class="btn btn-basic d-flex align-items-center ml-2">Save
+                                <i v-if="loading" class="preview-loader__white ml-2"></i></i>
+                            </button>
+                        </template>
                     </div>
                 </template>
             </TableCard>
