@@ -9,6 +9,7 @@ const RolesTable = {
             table_attributes: {
                 'data-pagination': 'true',
                 'data-side-pagination': 'client',
+                'data-unique-id': "name",
                 'id': 'roles-table',
                 "data-search-selector": "#customSearch"
             },
@@ -88,7 +89,7 @@ const RolesTable = {
                 fixedColumns: true,
                 fixedNumber: 1,
                 fixedRightNumber: 2,
-            })
+            });
         },
         generateColumns(roles, canEdit) {
             return [
@@ -97,7 +98,6 @@ const RolesTable = {
                     title: 'Permission',
                     sortable: true,
                     searchable: true,
-                    editable: false,
                     class: 'min-w-175',
                 },
                 ...roles.map(role => ({
@@ -247,8 +247,12 @@ const RolesTable = {
             })
         },
         async saveRoles() {
-            this.loading = true;
+            $('#searchRole').val('');
+            $('#roles-table').bootstrapTable('filterBy', {})
             const tableData = $('#roles-table').bootstrapTable('getData');
+            const isRowValid = this.rowValidation(tableData);
+            if (!isRowValid) return;
+            this.loading = true;
             this.saveRolesAPI(tableData).then((res) => {
                 if (res.ok) {
                     showNotify('SUCCESS', 'Permissions updated')
@@ -260,6 +264,23 @@ const RolesTable = {
             }).finally(() => {
                 this.loading = false;
             })
+        },
+        rowValidation(tableData) {
+            const emptyRowIdx = [];
+            tableData.forEach((row, index) => {
+                const rowRoles = Object.assign({}, row);
+                delete rowRoles.name;
+                const isFilledRow = Object.values(rowRoles).some(role => role);
+                if (!isFilledRow) emptyRowIdx.push(index);
+            })
+            if (emptyRowIdx.length > 0) {
+                emptyRowIdx.forEach(idx => {
+                    $('#roles-table').find(`[data-index='${idx}']`).addClass('empty-row__error');
+                })
+                showNotify('ERROR', '[Permission] must be assigned to one role.');
+                return false;
+            }
+            return true;
         }
     },
     template: `
@@ -287,7 +308,7 @@ const RolesTable = {
                             <button type="button" @click="changeMode" 
                                 id="project_submit" class="btn btn-secondary btn-basic">Cancel</button>
                             <button type="button" @click="saveRoles" class="btn btn-basic d-flex align-items-center ml-2">Save
-                                <i v-if="loading" class="preview-loader__white ml-2"></i></i>
+                                <i v-if="loading" class="preview-loader__white ml-2"></i>
                             </button>
                         </template>
                     </div>
@@ -306,7 +327,7 @@ const RolesTable = {
             <Transition>
                 <roles-modal-confirm
                     v-if="showConfirmModal"
-                    @close-confirm="showCreateModal = false"
+                    @close-confirm="showConfirmModal = false"
                     @delete-role="handleDeleteRole"
                     :editable-roles="editableRoles">
                 </roles-modal-confirm>
