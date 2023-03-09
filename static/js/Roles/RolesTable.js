@@ -89,7 +89,6 @@ const RolesTable = {
                 fixedColumns: true,
                 fixedNumber: 1,
                 fixedRightNumber: 2,
-            });
         },
         generateColumns(roles, canEdit) {
             return [
@@ -252,7 +251,7 @@ const RolesTable = {
             const tableData = $('#roles-table').bootstrapTable('getData');
             const isRowValid = this.rowValidation(tableData);
             if (!isRowValid) return;
-            this.loading = true;
+            const tableData = $('#roles-table').bootstrapTable('getData');
             this.saveRolesAPI(tableData).then((res) => {
                 if (res.ok) {
                     showNotify('SUCCESS', 'Permissions updated')
